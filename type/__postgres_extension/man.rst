@@ -43,7 +43,7 @@ EXAMPLES
 
 SEE ALSO
 --------
-:strong:`cdist-type__postgre_database`\ (7)
+:strong:`cdist-type__postgres_database`\ (7)
 
 Postgres "Create Extension" documentation at: <http://www.postgresql.org/docs/current/static/sql-createextension.html>.
 
