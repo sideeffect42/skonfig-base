@@ -44,10 +44,10 @@ state_should=$( cat "$__object/parameter/state" )
 case "$state_should" in
     present)
          cmd="CREATE EXTENSION IF NOT EXISTS $extension"
-         echo "su - '$postgres_user' -c 'psql -c \"$cmd\" \"$dbname\"'"
+         echo "su - '$postgres_user' -c 'psql -c \"$cmd\" \"$dbname\" postgres'"
     ;;
     absent)
          cmd="DROP EXTENSION IF EXISTS $extension"
-         echo "su - '$postgres_user' -c 'psql -c \"$cmd\" \"$dbname\"'"
+         echo "su - '$postgres_user' -c 'psql -c \"$cmd\" \"$dbname\" postgres'"
     ;;
 esac
