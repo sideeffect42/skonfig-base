@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # 2011-2015 Steven Armstrong (steven-cdist at armstrong.cc)
+# 2019 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
 #
 # This file is part of cdist.
 #
@@ -21,7 +22,36 @@
 # Get an existing groups group entry.
 #
 
+not_supported() {
+	echo "Your operating system ($("$__explorer/os")) is currently not supported." >&2
+	echo "Cannot extract group information." >&2
+	echo "Please contribute an implementation for it if you can." >&2
+	exit 1
+}
+
 name=$__object_id
 
-getent group "$name" || true
+if command -v getent >/dev/null
+then
+	getent group "$name" || true
+elif command -v dscl >/dev/null
+then
+	# Mac OS X uses Directory Service to manage users and groups
+	dscl_grep() {
+		awk -F ': +' "\$1 == \"$1\" { print \$2 }"
+	}
 
+	if gprops=$(dscl -q . -read "/Groups/${name}")
+	then
+		printf '%s:%s:%u:%s\n' \
+			"$name" \
+			"$(echo "$gprops" | dscl_grep Password)" \
+			"$(echo "$gprops" | dscl_grep PrimaryGroupID)" \
+			"$(echo "$gprops" | dscl_grep GroupMembership | tr ' ' ',')"
+	fi
+elif [ -f /etc/group ]
+then
+	grep "^${name}:" /etc/group || true
+else
+	not_supported
+fi
