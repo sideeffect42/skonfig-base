@@ -18,9 +18,13 @@
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
 
-if command -v ip >/dev/null
+if test -d /sys/class/net
+then
+	ls -1 /sys/class/net/
+elif command -v ip >/dev/null
 then
 	ip -o link show | sed -n 's/^[0-9]\+: \(.\+\): <.*/\1/p'
+	# ip -br -o link show | cut -d' ' -f1
 elif command -v ifconfig >/dev/null
 then
 	ifconfig -a | sed -n -E 's/^(.*)(:[[:space:]]*flags=|Link encap).*/\1/p'
