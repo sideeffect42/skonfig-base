@@ -42,3 +42,6 @@ ssh_directory="${home}/.ssh"
 __directory "$ssh_directory" \
     --state "$state" \
     --owner "$owner" --group "$group" --mode 0700
+
+
+# Fedora 12: Execute "restorecon -R -v ~/.ssh" afterwards!
