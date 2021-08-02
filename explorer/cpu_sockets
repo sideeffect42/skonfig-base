@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/sh -e
 #
 # 2014 Daniel Heule  (hda at sfs.biz)
 # 2014 Thomas Oettli (otho at sfs.biz)
+# 2021 Dennis Camera (cdist at dtnr.ch)
 #
 # This file is part of cdist.
 #
@@ -18,23 +19,43 @@
 # You should have received a copy of the GNU General Public License
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
+# Prints the number of CPUs that are installed (aka. sockets)
 #
 
-# FIXME: other system types (not linux ...)
+case $("${__explorer:?}/os")
+in
+	(macosx)
+		system_profiler SPHardwareDataType \
+		| awk -F': ' '/ *Number of Processors:/ { print $2 }'
+		;;
+	(*)
+		# NOTE: Prefer /proc/cpuinfo if possible because some container engines
+		#       only fake /proc/cpuinfo.
+		if test -r /proc/cpuinfo
+		then
+			sockets=$(grep '^physical id	:' /proc/cpuinfo | sort -u | wc -l)
+			if test $((sockets)) -gt 0
+			then
+				echo $((sockets))
+				exit 0
+			fi
+		fi
 
-os=$("$__explorer/os")
-case "$os" in
-    "macosx")
-        system_profiler SPHardwareDataType | grep "Number of Processors" | awk -F': ' '{print $2}'
-    ;;
+		if command -v lscpu >/dev/null 2>&1
+		then
+			lscpu_parse=$(lscpu -p) &&
+			sockets=$(awk -F, '/^[^#]/ { x[$3]++ } END { for (k in x) i++; print i }' <<-EOF
+				${lscpu_parse}
+				EOF
+				)
 
-    *)
-    if [ -r /proc/cpuinfo ]; then
-        sockets="$(grep "physical id" /proc/cpuinfo | sort -u | wc -l)"
-        if [ "${sockets}" -eq 0 ]; then
-            sockets="$(grep -c "processor" /proc/cpuinfo)"
-        fi
-        echo "${sockets}"
-    fi
-    ;;
+			if test $((sockets)) -gt 0
+			then
+				echo $((sockets))
+				exit
+			fi
+		fi
+
+		echo 1  # fallback
+		;;
 esac
