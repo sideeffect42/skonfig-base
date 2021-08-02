@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/sh -e
 #
 # 2014 Daniel Heule  (hda at sfs.biz)
 # 2014 Thomas Oettli (otho at sfs.biz)
+# 2021 Dennis Camera (cdist at dtnr.ch)
 #
 # This file is part of cdist.
 #
@@ -18,32 +19,61 @@
 # You should have received a copy of the GNU General Public License
 # along with cdist. If not, see <http://www.gnu.org/licenses/>.
 #
+# Prints the number of CPU cores currently online  (over all sockets, w/o SMT)
 #
 
-# FIXME: other system types (not linux ...)
+maybe() {
+	if test $(($1)) -gt 0
+	then
+		echo $(($1))
+		exit
+	fi
+}
 
-os=$("$__explorer/os")
-case "$os" in
-    "macosx")
-        sysctl -n hw.physicalcpu
-    ;;
 
-    "openbsd")
-        sysctl -n hw.ncpuonline
-    ;;
+# arch-specific
 
-    "freebsd"|"netbsd")
-        PATH=$(getconf PATH)
-        sysctl -n hw.ncpu
-    ;;
+if expr "$(uname -m)" : 'ppc64' >/dev/null && command -v ppc64_cpu >/dev/null 2>&1
+then
+	# use ppc64_cpu when on ppc64*
+	# e.g.
+	# # ppc64_cpu --cores-on
+	# Number of cores online = 10
+	cores=$(ppc64_cpu --cores-on | sed 's/.*= *//')
+	maybe $((cores))
+fi
 
-    *)
-        if [ -r /proc/cpuinfo ]; then
-            cores="$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)"
-            if [ "${cores}" -eq 0 ]; then
-                cores="1"
-            fi
-            echo "$cores"
-        fi
-    ;;
+
+# OS-specific
+
+case $("${__explorer:?}/os")
+in
+	(freebsd|netbsd)
+		command -p sysctl -n hw.ncpu
+		;;
+	(macosx)
+		sysctl -n hw.physicalcpu
+		;;
+	(openbsd)
+		sysctl -n hw.ncpuonline
+		;;
+	(*)
+		# NOTE: Prefer /proc/cpuinfo if possible because some container engines
+		#       only fake /proc/cpuinfo.
+		if test -r /proc/cpuinfo
+		then
+			cores=$(grep '^core id	:' /proc/cpuinfo | sort -u | wc -l)
+			maybe $((cores))
+		fi
+
+		if command -v lscpu >/dev/null 2>&1
+		then
+			cores=$(
+				lscpu -p \
+				| awk -F, '/^[^#]/ { x[$2]++ } END { for (k in x) i++; print i }')
+			maybe $((cores))
+		fi
+
+		maybe 1  # fallback
+		;;
 esac
