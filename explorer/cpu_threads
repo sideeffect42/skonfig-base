@@ -1,0 +1,85 @@
+#!/bin/sh -e
+#
+# 2021 Dennis Camera (cdist at dtnr.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+# Prints the number of currently online CPU threads (i.e. processing units over
+# all sockets and cores)
+#
+
+maybe() {
+	if test $(($1)) -gt 0
+	then
+		echo $(($1))
+		exit
+	fi
+}
+
+
+# generic
+
+# https://www.flamingspork.com/blog/2020/11/25/why-you-should-use-nproc-and-not-grep-proc-cpuinfo/
+if nproc_bin=$(command -v gnproc nproc >/dev/null 2>&1 | head -n1) && test -x "${nproc_bin}"
+then
+	cpu_threads=$("${nproc_bin}")
+	maybe $((cpu_threads))
+fi
+
+
+# arch-specific
+
+if expr "$(uname -m)" : 'ppc64' >/dev/null && command -v ppc64_cpu >/dev/null 2>&1
+then
+	# parse ppc64_cpu --info
+	# e.g.
+	# # ppc64_cpu --info
+	# Core   0:    0*    1*    2*    3*    4*    5*    6*    7*
+	# Core   1:    8*    9*   10*   11*   12*   13*   14*   15*
+	# ...
+	# Core   9:   72    73    74    75    76    77    78    79
+
+	cpu_threads=$(
+		ppc64_cpu --info \
+		| awk '/^Core *[0-9]+:/ { sub(/^Core *[0-9]+:/, ""); for (i = 1; i <= NF; i++) c += ($i ~ /\*$/) } END { print c }')
+	maybe $((cpu_threads))
+fi
+
+
+
+# OS-specific
+
+case $("${__explorer:?}/os")
+in
+	(macosx)
+		sysctl -n hw.logicalcpu
+		;;
+	(*)
+		# NOTE: Prefer /proc/cpuinfo if possible because some container engines
+		#       only fake /proc/cpuinfo.
+		if test -r /proc/cpuinfo
+		then
+			cpu_threads=$(grep '^processor	:' /proc/cpuinfo | sort -u | wc -l)
+			maybe $((cpu_threads))
+		fi
+
+		if command -v lscpu >/dev/null 2>&1
+		then
+			cpu_threads=$(lscpu -p | awk -F, '/^[^#]/ { x[$1]++ } END { for (k in x) i++; print i }')
+			maybe $((cpu_threads))
+		fi
+		;;
+esac
