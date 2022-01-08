@@ -21,22 +21,28 @@
 # Retrieve the status of a package - parsed pkgng output
 #
 
-if ! pkg -N >/dev/null 2>&1; then
+pkg -N >/dev/null 2>&1 || {
    # Nothing to do if pkg is not bootstrapped
-   exit
-fi
+   exit 0
+}
 
-if [ -f "$__object/parameter/name" ]; then
-   name="$(cat "$__object/parameter/name")"
+if test -f "${__object:?}/parameter/name"
+then
+	name=$(cat "${__object:?}/parameter/name")
 else
-   name="$__object_id"
+	name=${__object_id:?}
 fi
 
 # Don't produce "no pkgs installed" output -- breaks things
 PKG_OUTPUT=$(pkg info 2>&1)
-printf "%s" "$(echo "$PKG_OUTPUT" \
-   | awk '{print $1}' \
-   | sed 's/^\(.*\)-\([^-]*\)$/name:\1 ver:\2/g' \
-   | grep "name:$name ver:" \
-   | sed 's/^.*ver:\(.*\)/\1/g')"
-
+awk -v name="${name}" '
+{
+	p = $1
+	match($1, ".*-")
+	pn = substr($1, RSTART, RLENGTH-1)
+	pv = substr($1, RLENGTH+1)
+}
+name == pn { print pv }
+' <<EOF
+${PKG_OUTPUT}
+EOF
