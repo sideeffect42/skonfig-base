@@ -37,10 +37,13 @@ in
 			echo 'for _, p in pairs(TZ) do print(p[1], p[2]) end'
 		} | lua >"${OUTFILE}"
 		;;
-	(--help|*)
+	(-h|--help|*)
 		printf 'Usage: %s (fetch|local)\n\n' "$0"
 		printf 'fetch:\n\tDownload tzdata.lua from the LuCI Git repository and convert to TSV for use by the type.\n'
 		printf 'local:\n\tUse the installed tzdata.lua file (script must be run on an OpenWrt system with LuCI installed)\n'
-		exit 0
+
+		# exit 0 if --help, 1 otherwise.
+		test "$1" = '--help' -o "$1" = '-h'
+		exit
 		;;
 esac
