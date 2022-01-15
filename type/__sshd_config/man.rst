@@ -3,12 +3,13 @@ cdist-type__sshd_config(7)
 
 NAME
 ----
-cdist-type__sshd_config - Manage options in sshd_config
+cdist-type__sshd_config - Manage options in sshd_config.
 
 
 DESCRIPTION
 -----------
-This space intentionally left blank.
+This cdist type allows you to modify the configuration of the OpenSSH
+server (``sshd``).
 
 
 REQUIRED PARAMETERS
@@ -19,28 +20,32 @@ None.
 OPTIONAL PARAMETERS
 -------------------
 file
-    The path to the sshd_config file to edit.
-    Defaults to ``/etc/ssh/sshd_config``.
+   The path to the sshd_config file to edit.
+
+   Defaults to: ``/etc/ssh/sshd_config``.
 match
-    Restrict this option to apply only for certain connections.
-    Allowed values are what would be allowed to be written after a ``Match``
-    keyword in ``sshd_config``, e.g. ``--match 'User anoncvs'``.
+   Restrict this option to apply only for certain connections.
+   Allowed values are what would be allowed to be written after a ``Match``
+   keyword in ``sshd_config``, e.g. ``--match 'User anoncvs'``.
 
-    Can be used multiple times. All of the values are ANDed together.
+   Can be used multiple times. All of the values are ANDed together.
 option
-    The name of the option to manipulate. Defaults to ``__object_id``.
+   The name of the option to manipulate.
+
+   Defaults to: ``__object_id``.
 state
-    Can be:
+   Can be:
 
-    - ``present``: ensure a matching config line is present (or the default
-      value).
-    - ``absent``: ensure no matching config line is present.
+   ``present``
+      ensure a matching config line is present (or the default value).
+   ``absent``
+      ensure no matching config line is present.
 value
-    The option's value to be assigned to the option (if ``--state present``) or
-    removed (if ``--state absent``).
+   The option's value to be assigned to the option (if ``--state present``) or
+   removed (if ``--state absent``).
 
-    This option is required if ``--state present``. If not specified and
-    ``--state absent``, all values for the given option are removed.
+   This option is required if ``--state present``. If not specified and
+   ``--state absent``, all values for the given option are removed.
 
 
 BOOLEAN PARAMETERS
@@ -53,18 +58,18 @@ EXAMPLES
 
 .. code-block:: sh
 
-    # Disallow root logins with password
-    __sshd_config PermitRootLogin --value without-password
+   # Disallow root logins with password
+   __sshd_config PermitRootLogin --value without-password
 
-    # Disallow password-based authentication
-    __sshd_config PasswordAuthentication --value no
+   # Disallow password-based authentication
+   __sshd_config PasswordAuthentication --value no
 
-    # Accept the EDITOR environment variable
-    __sshd_config AcceptEnv:EDITOR --option AcceptEnv --value EDITOR
+   # Accept the EDITOR environment variable
+   __sshd_config AcceptEnv:EDITOR --option AcceptEnv --value EDITOR
 
-    # Force command for connections as git user
-    __sshd_config git@ForceCommand --match 'User git' --option ForceCommand \
-        --value 'cd ~git && exec git-shell ${SSH_ORIGINAL_COMMAND:+-c "${SSH_ORIGINAL_COMMAND}"}'
+   # Force command for connections as git user
+   __sshd_config git@ForceCommand --match 'User git' --option ForceCommand \
+       --value 'cd ~git && exec git-shell ${SSH_ORIGINAL_COMMAND:+-c "${SSH_ORIGINAL_COMMAND}"}'
 
 
 SEE ALSO
@@ -92,7 +97,8 @@ Dennis Camera <dennis.camera--@--ssrq-sds-fds.ch>
 
 COPYING
 -------
-Copyright \(C) 2020 Dennis Camera. You can redistribute it
-and/or modify it under the terms of the GNU General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+Copyright \(C) 2020,2022 Dennis Camera.
+You can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation,
+either version 3 of the License, or (at your option) any later
+version.
