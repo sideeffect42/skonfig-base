@@ -82,6 +82,13 @@ printf '%s%s %s\n' "${mode}" "${match_only:+ [${match_only}]}" \
 
 # Update sshd_config (remote code)
 cat <<EOF
+sshd_bin=\$(command -v sshd 2>/dev/null) \
+&& test -x "\${sshd_bin}" \
+|| {
+	echo 'Cannot find sshd executable.' >&2
+	exit 1
+}
+
 awk $(drop_awk_comments "${__type:?}/files/update_sshd_config.awk") \\
 	-o ${mode} \\
 	-m $(quote "${match_only}") \\
@@ -90,7 +97,7 @@ awk $(drop_awk_comments "${__type:?}/files/update_sshd_config.awk") \\
 || exit
 
 cmp -s $(quote "${sshd_config_file}") $(quote "${sshd_config_file}.tmp") || {
-	sshd -t -f $(quote "${sshd_config_file}.tmp") \\
+	"\${sshd_bin}" -t -f $(quote "${sshd_config_file}.tmp") \\
 	&& cat $(quote "${sshd_config_file}.tmp") >$(quote "${sshd_config_file}") \\
 	|| exit  # stop if sshd_config file check fails
 }
