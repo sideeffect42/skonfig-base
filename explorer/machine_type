@@ -174,7 +174,10 @@ check_chroot_procfs() (
 	if test -e /proc/1/mountinfo -a -e /proc/self/mountinfo
 	then
 		has_mountinfo=true
-		cmp -s /proc/1/mountinfo /proc/self/mountinfo || is_chroot=true
+		if command -v cmp >/dev/null 2>&1
+		then
+			cmp -s /proc/1/mountinfo /proc/self/mountinfo || is_chroot=true
+		fi
 	fi
 
 	if ${is_chroot}
@@ -202,7 +205,7 @@ check_chroot_procfs() (
 				EOF
 				printf '%s\n' "${hmntpnt%${cmntpnt}}"
 			done </proc/self/mountinfo \
-			| sort -u \
+			| sort \
 			| head -n 1  # just take the first...
 		fi
 
