@@ -24,6 +24,9 @@ case "$("$__explorer/os")" in
    checkpoint)
        cat /etc/cp-release
    ;;
+   libreelec)
+      lsb_release
+   ;;
    openwrt)
       # shellcheck disable=SC1091
       (. /etc/openwrt_release && echo "$DISTRIB_DESCRIPTION")
