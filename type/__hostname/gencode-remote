@@ -2,7 +2,7 @@
 #
 # 2014-2017 Steven Armstrong (steven-cdist at armstrong.cc)
 # 2014 Nico Schottelius (nico-cdist at schottelius.org)
-# 2019,2020 Dennis Camera (dennis.camera at riiengineering.ch)
+# 2019,2020,2023 Dennis Camera (dennis.camera at riiengineering.ch)
 #
 # This file is part of skonfig-base.
 #
@@ -69,6 +69,9 @@ in
         ;;
     (centos|fedora|redhat|scientific|freebsd|netbsd|openbsd|gentoo|void)
         echo "hostname '${name_should}'"
+        ;;
+    (libreelec)
+        echo "PYTHONPATH=/usr/share/kodi/addons/service.libreelec.settings/resources/lib python3 -c 'import sys, hostname; hostname.set_hostname(sys.argv[1])' '${name_should}'"
         ;;
     (openwrt)
         echo "echo '${name_should}' >/proc/sys/kernel/hostname"

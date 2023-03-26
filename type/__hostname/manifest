@@ -2,7 +2,7 @@
 #
 # 2012 Steven Armstrong (steven-cdist at armstrong.cc)
 # 2014 Nico Schottelius (nico-cdist at schottelius.org)
-# 2019,2020 Dennis Camera (dennis.camera at riiengineering.ch)
+# 2019,2020,2023 Dennis Camera (dennis.camera at riiengineering.ch)
 #
 # This file is part of skonfig-base.
 #
@@ -111,6 +111,9 @@ in
             --delimiter '=' --exact_delimiter \
             --key 'hostname' \
             --value "\"${name_should}\""
+        ;;
+    (libreelec)
+        # handled in gencode-remote
         ;;
     (macosx)
         # handled in gencode-remote
