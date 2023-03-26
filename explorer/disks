@@ -46,7 +46,10 @@ case $uname_s in
         then
             # shellcheck disable=SC2012
             ls -1 /sys/block/ \
-            | awk -v ign_majors="$(echo "$ign_majors" | tr ' ' '|')" '
+            | awk -v ign_majors="${ign_majors}" '
+                BEGIN {
+                  gsub(/ +/, "|", ign_majors)
+                }
                 {
                   devfile = "/sys/block/" $0 "/dev"
                   getline devno < devfile
@@ -74,4 +77,4 @@ case $uname_s in
         printf 'If you can please submit a patch\n' >&2
     ;;
 esac \
-| xargs
+| tr '\n' ' '
