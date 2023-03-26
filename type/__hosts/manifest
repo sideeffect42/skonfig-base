@@ -25,6 +25,15 @@ hostname=$__object_id
 state=$(cat "${__object}/parameter/state")
 marker="# __hosts/${hostname}"
 
+read -r os <"${__global:?}/explorer/os"
+case ${os}
+in
+	(libreelec)
+		hosts_file=/storage/.config/hosts.conf ;;
+	(*)
+		hosts_file=/etc/hosts ;;
+esac
+
 if test "${state}" != 'absent'
 then
 	ip=$(cat "${__object}/parameter/ip")
@@ -39,4 +48,4 @@ else
 	set -- --regex "$(echo "${marker}" | sed -e 's/\./\\./')$"
 fi
 
-__line "/etc/hosts:${hostname}" --file /etc/hosts --state "${state}" "$@"
+__line "${hosts_file:?}:${hostname}" --file "${hosts_file:?}" --state "${state}" "$@"
