@@ -21,9 +21,6 @@ OPTIONAL PARAMETERS
 state
    'present' or 'absent'. Defaults to 'present'
 
-repositoryid
-   Defaults to __object_id.
-
 name
 
 baseurl

@@ -14,7 +14,6 @@ password
 proxy
 proxy_password
 proxy_username
-repositoryid
 retries
 sslcacert
 ssl_check_cert_permissions
