@@ -1,11 +1,8 @@
 bandwidth
 cost
-exclude
 failovermethod
 gpgcakey
-gpgcheck
 http_caching
-includepkgs
 metadata_expire
 mirrorlist
 mirrorlist_expire
@@ -16,10 +13,8 @@ proxy_password
 proxy_username
 retries
 sslcacert
-ssl_check_cert_permissions
 sslclientcert
 sslclientkey
-sslverify
 state
 throttle
 timeout

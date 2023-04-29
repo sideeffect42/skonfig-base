@@ -1,2 +1,4 @@
 baseurl
+exclude
+includepkgs
 gpgkey

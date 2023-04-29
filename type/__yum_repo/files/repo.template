@@ -1,61 +1,93 @@
 #!/bin/sh
+#
+# 2014 Steven Armstrong (steven-cdist at armstrong.cc)
+# 2023 Dennis Camera (dennis.camera at riiengineering.ch)
+#
+# This file is part of cdist.
+#
+# cdist is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# cdist is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+#
+
 set -u
-cat << DONE
-# Created by cdist ${__type##*/}
+
+repo_name=${__object_id:?}
+
+# file header
+cat <<EOF
+# This file is managed by ${__type##*/}
 # Do not change. Changes will be overwritten.
 #
-[$repo_name]
-DONE
-# single value properties
-single_value='name
-metalink
-mirrorlist
-gpgcakey
-gpgcheck 
-exclude
-includepkgs
-failovermethod
-timeout
-http_caching
-retries
-throttle
-bandwidth
-sslcacert
-sslverify
-sslclientcert
-sslclientkey
-ssl_check_cert_permissions
-metadata_expire
-mirrorlist_expire
-proxy
-proxy_username
-proxy_password
-username
-password
-cost'
-for key in $single_value; do
-   if [ -f "$__object/parameter/$key" ]; then
-      printf '%s=%s\n' "$key" "$(cat "$__object/parameter/$key")"
-   fi
-done
-# multi value properties
-for key in baseurl gpgkey; do
-   if [ -f "$__object/parameter/$key" ]; then
-      printf '%s=' "$key"
-      prefix=''
-      while read -r line; do
-         printf '%s%s\n' "$prefix" "$line"
-         prefix='   '
-      done < "$__object/parameter/$key"
-   fi
-done
-# boolean properties
-for key in enabled repo_gpgcheck keepalive skip_if_unavailable; do
-   if [ -f "$__object/parameter/$key" ]; then
-      printf '%s=1\n' "$key"
-   fi
-done
-# special cases
-if [ -f "$__object/parameter/disablegroups" ]; then
-   printf 'enablegroups=0\n'
-fi
+[${repo_name:?}]
+EOF
+
+param() {
+	if test -f "${__object:?}/parameter/${1:?}"
+	then
+		case ${2:-str}
+		in
+			(bool)
+				printf '%s=1\n' "${1:?}"
+				;;
+			(!bool)
+				printf '%s=0\n' "${3-${1:?}}"
+				;;
+			(str)
+				printf '%s=%s\n' \
+					"${1:?}" "$(cat "${__object:?}/parameter/${1:?}")"
+				;;
+			(str+)
+				printf '%s=%s\n' \
+					"${1:?}" "$(sed -e '2,$s/^/   /' "${__object:?}/parameter/${1:?}")"
+				;;
+			(*)
+				return 1
+				;;
+		esac
+	fi
+}
+
+# configuration options (cf. yum.conf(5))
+param name str
+param baseurl str+
+param metalink str
+param mirrorlist str
+param mirrorlist_expire str
+param enabled bool
+param gpgcheck bool
+param repo_gpgcheck bool
+param gpgkey str+
+param gpgcakey str
+param exclude str+
+param includepkgs str+
+param disablegroups !bool enablegroups
+param failovermethod str
+param keepalive bool
+param timeout str
+param http_caching str
+param retries str
+param throttle str
+param bandwidth str
+param no-sslverify !bool sslverify
+param sslcacert str
+param sslclientcert str
+param sslclientkey str
+param no-ssl_check_cert_permissions !bool ssl_check_cert_permissions
+param metadata_expire str
+param proxy str
+param proxy_password str
+param proxy_username str
+param username str
+param password str
+param cost str
+param skip_if_unavailable bool

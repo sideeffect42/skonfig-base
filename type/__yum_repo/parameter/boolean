@@ -1,5 +1,8 @@
-enabled
-repo_gpgcheck
 disablegroups
+enabled
+gpgcheck
 keepalive
+no-ssl_check_cert_permissions
+no-sslverify
+repo_gpgcheck
 skip_if_unavailable
