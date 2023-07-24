@@ -1,55 +1,69 @@
 #!/bin/sh -e
 #
 # 2013-2019 Nico Schottelius (nico-cdist at schottelius.org)
-# 2020 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+# 2020,2023 Dennis Camera (dennis.camera at riiengineering.ch)
 #
-# This file is part of cdist.
+# This file is part of skonfig-base.
 #
-# cdist is free software: you can redistribute it and/or modify
+# skonfig-base is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# cdist is distributed in the hope that it will be useful,
+# skonfig-base is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with cdist. If not, see <http://www.gnu.org/licenses/>.
+# along with skonfig-base. If not, see <http://www.gnu.org/licenses/>.
 #
 # Manage system locales using localedef(1).
 #
 
-# shellcheck source=cdist/conf/type/__localedef/files/lib/locale.sh
+shquot() {
+	sed -e "s/'/'\\\\''/g" -e "1s/^/'/" -e "\$s/\$/'/" <<-EOF
+	$*
+	EOF
+}
+
+# shellcheck source=SCRIPTDIR/files/lib/locale.sh
 . "${__type:?}/files/lib/locale.sh"
-# shellcheck source=cdist/conf/type/__localedef/files/lib/glibc.sh
+# shellcheck source=SCRIPTDIR/files/lib/glibc.sh
 . "${__type:?}/files/lib/glibc.sh"
+
+os=$(cat "${__global:?}/explorer/os")
 
 state_is=$(cat "${__object:?}/explorer/state")
 state_should=$(cat "${__object:?}/parameter/state")
 
-test "${state_should}" = 'present' -o "${state_should}" = 'absent' || {
-	printf 'Invalid state: %s\n' "${state_should}" >&2
-	exit 1
-}
+case ${state_should}
+in
+	(present)
+		;;
+	(absent)
+		;;
+	(*)
+		printf 'Invalid --state: %s\n' "${state_should}" >&2
+		exit 1
+		;;
+esac
 
 # NOTE: If state explorer fails (e.g. locale(1) missing), the following check
 #       will always fail and let definition/removal run.
-if test "${state_is}" = "${state_should}"
-then
-	exit 0
-fi
+test "${state_is}" != "${state_should}" || exit 0
 
-locale=${__object_id:?}
-os=$(cat "${__global:?}/explorer/os")
-
-if expr "${locale}" : '.*/' >/dev/null
-then
-	printf 'Paths as locales are not supported.\n' >&2
-	printf '__object_id is: %s\n' "${locale}" >&2
-	exit 1
-fi
+case ${__object_id:?}
+in
+	(*/)
+		printf 'Paths as locales are not supported.\n' >&2
+		printf '__object_id is: %s\n' "${locale}" >&2
+		exit 1
+		;;
+	(*)
+		locale=${__object_id:?}
+		;;
+esac
 
 : "${lang=}" "${codeset=}" "${modifier=}"  # declare variables for shellcheck
 parse_locale "${locale}" lang codeset modifier
@@ -75,12 +89,12 @@ in
 				input=$(format_locale "${lang}" '' "${modifier}")
 				cat <<-EOF
 				set --
-				if test -e '${aliasfile}'
+				if test -e $(shquot "${aliasfile}")
 				then
-					set -- -A '${aliasfile}'
+					set -- -A $(shquot "${aliasfile}")
 				fi
 
-				localedef -i '${input}' -f '${codeset}' "\$@" '${locale}'
+				localedef -i $(shquot "${input}") -f $(shquot "${codeset}") "\$@" $(shquot "${locale}")
 				EOF
 				;;
 			(absent)
@@ -89,7 +103,7 @@ in
 				cat <<-EOF
 				while read -r _alias _localename
 				do
-				    if test "\${_localename}" = '$(format_locale "${lang}" "${codeset}")'
+				    if test "\${_localename}" = $(shquot "$(format_locale "${lang}" "${codeset}")")
 				    then
 				        localedef --delete-from-archive "\${_alias}"
 				    fi
@@ -98,7 +112,8 @@ in
 
 				if test "${state_is}" = present
 				then
-					printf "localedef --delete-from-archive '%s'\n" "${main_localename}"
+					printf "localedef --delete-from-archive %s\n" \
+						"$(shquot "${main_localename}")"
 				fi
 				;;
 		esac
@@ -107,10 +122,13 @@ in
 		case ${state_should}
 		in
 			(present)
-				if expr "$(grep -oe '^[0-9]*' "${__global:?}/explorer/os_version")" '>=' 11 >/dev/null
+				if expr "$(grep -o -e '^[0-9]*' "${__global:?}/explorer/os_version")" '>=' 11 >/dev/null
 				then
 					# localedef(1) is available with FreeBSD >= 11
-					printf "localedef -i '%s' -f '%s' '%s'\n" "${input}" "${codeset}" "${locale}"
+					printf "localedef -i %s -f %s %s\n" \
+						"$(shquot "${input}")" \
+						"$(shquot "${codeset}")" \
+						"$(shquot "${locale}")"
 				else
 					printf 'localedef(1) was added to FreeBSD starting with version 11.\n' >&2
 					printf 'Please upgrade your FreeBSD installation to use %s.\n' "${__type##*/}" >&2
@@ -118,7 +136,7 @@ in
 				fi
 				;;
 			(absent)
-				printf "rm -R '/usr/share/locale/%s'\n" "${locale}"
+				printf "rm -R %s\n" "$(shquot "/usr/share/locale/${locale}")"
 				;;
 		esac
 		;;
