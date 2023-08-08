@@ -13,6 +13,9 @@ in
             (gentoo)
                 __package app-arch/tar
             ;;
+            (netbsd)
+                # part of the base system
+            ;;
             (openwrt)
                 # OpenWrt ships BusyBox tar in the base system
             ;;
@@ -43,9 +46,33 @@ in
             ;;
         esac
     ;;
+    (*.cpio)
+        case ${os}
+        in
+            (gentoo)
+                __package app-arch/cpio
+            ;;
+            (freebsd|netbsd|openbsd)
+                # part of the base system
+            ;;
+            (openwrt)
+                echo 'the cpio format is not supported on OpenWrt' >&2
+                exit 1
+            ;;
+            (*)
+                __package cpio
+            ;;
+        esac
+    ;;
     (*.gz|*.tgz)
         case ${os}
         in
+            (alpine|openwrt)
+                # use BusyBox gzip(1)
+            ;;
+            (freebsd|netbsd|openbsd)
+                # part of the base system
+            ;;
             (gentoo)
                 __package app-arch/gzip
             ;;
@@ -57,8 +84,8 @@ in
     (*.bz2|*.tbz2)
         case ${os}
         in
-            (freebsd)
-                # bzip2 is part of FreeBSD base system
+            (freebsd|netbsd)
+                # part of the base system
             ;;
             (gentoo)
                 __package app-arch/bzip2
@@ -71,14 +98,28 @@ in
     (*.lzma|*.xz|*.txz)
         case ${os}
         in
+            (alpine|centos|almalinux|eurolinux|rocky|openbsd|openwrt)
+                __package xz
+            ;;
             (debian|ubuntu|devuan)
                 __package xz-utils
+            ;;
+            (freebsd|netbsd)
+                # part of the base system
             ;;
             (gentoo)
                 __package app-arch/xz-utils
             ;;
-            (alpine|centos|almalinux|eurolinux|rocky|openwrt)
-                __package xz
+        esac
+    ;;
+    (*.pax)
+        case ${os}
+        in
+            (gentoo)
+                __package app-arch/pax
+            ;;
+            (*)
+                __package pax
             ;;
         esac
     ;;
@@ -93,14 +134,61 @@ in
             ;;
         esac
     ;;
+    (*.xar)
+        case ${os}
+        in
+            (gentoo)
+                __package app-arch/xar
+            ;;
+            (*)
+                __package xar
+            ;;
+        esac
+    ;;
     (*.zip)
         case ${os}
         in
+            (freebsd|netbsd)
+                # part of the base system
+            ;;
             (gentoo)
                 __package app-arch/unzip
             ;;
             (*)
                 __package unzip
+            ;;
+        esac
+    ;;
+    (*.Z)
+        case ${os}
+        in
+            (alpine)
+                # BusyBox gzip(1) supports decompression of POSIX compress files
+            ;;
+            (debian|devuan|ubuntu)
+                # /bin/uncompress is provided by gzip
+                __package gzip
+            ;;
+            (freebsd|netbsd|openbsd)
+                # part of the base system
+            ;;
+            (gentoo)
+                __package app-arch/ncompress
+            ;;
+            (openwrt)
+                printf 'the POSIX compress format is not supported on %s' "${os}" >&2
+                exit 1
+            ;;
+        esac
+    ;;
+    (*.zst)
+        case ${os}
+        in
+            (freebsd)
+                # part of the base system
+            ;;
+            (*)
+                __package zstd
             ;;
         esac
     ;;
