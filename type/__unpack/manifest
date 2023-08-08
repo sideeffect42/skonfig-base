@@ -6,14 +6,62 @@ src="/${__object_id:?}"
 
 case ${src}
 in
+    (*.tar|*.tar.*|*.t??|*.t???)
+        # require tar to unpack tar
+        case ${os}
+        in
+            (gentoo)
+                __package app-arch/tar
+            ;;
+            (openwrt)
+                # OpenWrt ships BusyBox tar in the base system
+            ;;
+            (*)
+                __package tar
+            ;;
+        esac
+    ;;
+esac
+
+case ${src}
+in
     (*.7z)
-        __package p7zip
+        case ${os}
+        in
+            (alpine)
+                __package 7zip
+            ;;
+            (gentoo)
+                __package app-arch/p7zip
+            ;;
+            (openwrt)
+                echo 'the 7z format is not supported on OpenWrt' >&2
+                exit 1
+            ;;
+            (*)
+                __package p7zip
+            ;;
+        esac
+    ;;
+    (*.gz|*.tgz)
+        case ${os}
+        in
+            (gentoo)
+                __package app-arch/gzip
+            ;;
+            (*)
+                __package gzip
+            ;;
+        esac
     ;;
     (*.bz2|*.tbz2)
         case ${os}
         in
             (freebsd)
                 # bzip2 is part of FreeBSD base system
+            ;;
+            (gentoo)
+                __package app-arch/bzip2
             ;;
             (*)
                 __package bzip2
@@ -26,7 +74,10 @@ in
             (debian|ubuntu|devuan)
                 __package xz-utils
             ;;
-            (alpine|centos|almalinux|eurolinux|rocky)
+            (gentoo)
+                __package app-arch/xz-utils
+            ;;
+            (alpine|centos|almalinux|eurolinux|rocky|openwrt)
                 __package xz
             ;;
         esac
@@ -34,12 +85,23 @@ in
     (*.rar)
         case ${os}
         in
-            (debian|ubuntu|devuan|alpine|freebsd)
+            (gentoo)
+                __package app-arch/unrar
+            ;;
+            (*)
                 __package unrar
             ;;
         esac
     ;;
     (*.zip)
-        __package unzip
+        case ${os}
+        in
+            (gentoo)
+                __package app-arch/unzip
+            ;;
+            (*)
+                __package unzip
+            ;;
+        esac
     ;;
 esac
