@@ -4,7 +4,7 @@
 # 2011 Nico Schottelius (nico-cdist at schottelius.org)
 # 2013 Daniel Heule (hda at sfs.biz)
 # 2018 Thomas Eckert (tom at it-eckert.de)
-# 2022 Dennis Camera (cdist at dtnr.ch)
+# 2022,2024 Dennis Camera (dennis.camera at riiengineering.ch)
 #
 # This file is part of skonfig-base.
 #
@@ -123,21 +123,30 @@ in
 				case ${property}
 				in
 					(gid)
-						if expr "${new_value}" : '[0-9][0-9]*$' >/dev/null 2>&1
+						field=4
+
+						# We always try to interpret the gid we are given as a
+						# group name, cf. also the comment in explorer/group.
+						# We thus try to resolve the gid from the user's
+						# passwd entry to the respective group name to compare.
+						gid_from_passwd=$(cut -d : -f 4 "${__object:?}/explorer/passwd")
+						gid_from_group=$(cut -d : -f 3 "${__object:?}/explorer/group")
+
+						# default: assume the group is different and thus we
+						# cannot resolve its name:
+						current_value=${gid_from_passwd}
+
+						if test "${gid_from_group}" -eq "${gid_from_passwd}"
 						then
-							field=4
-						else
-							# We were passed a group name.  Compare the gid in
-							# the user's /etc/passwd entry with the gid of the
-							# group returned by the group explorer.
-							gid_from_group=$(awk -F: '{ print $3 }' "${__object:?}/explorer/group")
-							gid_from_passwd=$(awk -F: '{ print $4 }' "${file}")
-							if [ "${gid_from_group}" != "${gid_from_passwd}" ]
+							# The group explorer returned the user's primary
+							# group. Now we check if the group's name matches
+							# the should value, and if so, we resolve the name
+							# because no change is needed.
+							if test "$(cut -d : -f 1 "${__object:?}/explorer/group")" = "${new_value}"
 							then
-								current_value=${gid_from_passwd}
-							else
 								current_value=${new_value}
 							fi
+							# else: default below
 						fi
 						;;
 					(password)
