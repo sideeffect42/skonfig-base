@@ -17,15 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with skonfig-base. If not, see <http://www.gnu.org/licenses/>.
 #
-#
-# Get an existing groups group entry.
+# Get an existing group's group entry.
 #
 
-if [ -f "$__object/parameter/gid" ]; then
-   gid=$(cat "$__object/parameter/gid")
-   if command -v getent >/dev/null; then
-      getent group "$gid" || true
-   elif [ -f /etc/group ]; then
-      grep -E "^(${gid}|([^:]+:){2}${gid}):" /etc/group || true
-   fi
+if test -f "${__object:?}/parameter/gid"
+then
+	gid=$(cat "${__object:?}/parameter/gid")
+	if command -v getent >/dev/null 2>&1
+	then
+		getent group "${gid}" || :
+	elif test -f /etc/group
+	then
+		grep -E "^(${gid}|([^:]+:){2}${gid}):" /etc/group || :
+	fi
 fi
