@@ -8,7 +8,7 @@ cdist-type__user - Manage users
 
 DESCRIPTION
 -----------
-This cdist type allows you to create or modify users on the target.
+This type allows you to create or modify users on the target.
 
 
 OPTIONAL PARAMETERS
