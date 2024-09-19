@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # 2011-2015 Steven Armstrong (steven-cdist at armstrong.cc)
-# 2019 Dennis Camera (dennis.camera at ssrq-sds-fds.ch)
+# 2019,2024 Dennis Camera (dennis.camera at riiengineering.ch)
 #
 # This file is part of skonfig-base.
 #
@@ -28,14 +28,14 @@ not_supported() {
 	exit 1
 }
 
-name=$__object_id
+name=${__object_id:?}
 
-if command -v getent >/dev/null
+if command -v getent >/dev/null 2>&1
 then
-	getent group "$name" || true
-elif [ -f /etc/group ]
+	getent group "${name}" || :
+elif test -f /etc/group
 then
-	grep "^${name}:" /etc/group || true
+	awk -F: -v n="${name}" 'n==$1' /etc/group
 else
 	not_supported
 fi
