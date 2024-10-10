@@ -106,35 +106,75 @@ sshd_conn_spec=$(
 )
 
 default_value=$(
-	"${sshd}" -T -f /dev/null -C "${sshd_conn_spec}" \
-	| grep_cfg_value "${option_name}"
-)
+	# NOTE: this weird construction is to save the exit status of sshd(8) to
+	#       detect support for the -T option.
+	defaults=$("${sshd}" -T -f /dev/null -C "${sshd_conn_spec}") || exit
+	grep_cfg_value "${option_name}" <<-EOF
+	${defaults}
+	EOF
+) || {
+	# OpenSSH < 5.1 detected :-)
+	sshd_has_exttest=false
+}
 
 test -d "${__object:?}/files" || mkdir "${__object:?}/files"
 
-value_is=$(
-	"${sshd:?}" -T -f "${sshd_config_file}" -C "${sshd_conn_spec}" \
-	| grep_cfg_value "${option_name}")
-
-if test -n "${value_should}"
+if ${sshd_has_exttest:-true}
 then
-	# convert given --value to the value reported by sshd -T (this is required
-	# to compare values with different names, e.g. prohibit-password or
-	# delta values like "Ciphers -md5")
-
-	{
-		if test -s "${__object:?}/parameter/match"
-		then
-			printf 'Match %s\n' "$(joinlines ' ' <"${__object:?}/parameter/match")"
-		fi
-		printf '%s %s\n' "${option_name}" "${value_should}"
-	} >"${__object:?}/files/optline.tmp"
-
-	value_should=$(
-		"${sshd:?}" -T -f "${__object:?}/files/optline.tmp" -C "${sshd_conn_spec}" \
+	value_is=$(
+		"${sshd}" -T -f "${sshd_config_file}" -C "${sshd_conn_spec}" \
 		| grep_cfg_value "${option_name}")
-	rm -f "${__object:?}/files/optline.tmp"
+
+	if test -n "${value_should}"
+	then
+		# convert given value to the value reported by sshd -T (this is required
+		# to compare values with different names, e.g. prohibit-password or
+		# delta values like "Ciphers -md5")
+
+		{
+			if test -s "${__object:?}/parameter/match"
+			then
+				printf 'Match %s\n' "$(joinlines ' ' <"${__object:?}/parameter/match")"
+			fi
+			printf '%s %s\n' "${option_name}" "${value_should}"
+		} >"${__object:?}/files/optline.tmp"
+
+		value_should=$(
+			"${sshd}" -T -f "${__object:?}/files/optline.tmp" -C "${sshd_conn_spec}" \
+			| grep_cfg_value "${option_name}")
+		rm -f "${__object:?}/files/optline.tmp"
+	fi
+else
+	# This system uses an ancient version of sshd(8) which does not support
+	# the -T option.  We'll parse the sshd_config file manually as good as
+	# we can *shrug*
+	value_is=$(
+		_match_line=$(joinlines ' ' <"${__object:?}/parameter/match")
+		awk -v match_spec="${_match_line}" -v option="${option_name}" '
+		BEGIN {
+			option_l = tolower(option)
+
+			if (match_spec) {
+				match_l = tolower(match_spec)
+			} else {
+				m = 1
+			}
+		}
+
+		$1 ~ /^[Mm]atch$/ {
+			$1 = ""; sub(/^ /, "")
+			m = (match_l == tolower($0))
+			next
+		}
+
+		m && option_l == tolower($1) {
+			$1 = ""; sub(/^ /, "")
+			v = v RS $0
+		}
+		END { if (v) { print v } }
+		' "${sshd_config_file}")
 fi
+
 
 if printf '%s\n' "${value_is}" | {
 		case ${value_should}
@@ -155,7 +195,7 @@ if printf '%s\n' "${value_is}" | {
 		esac
 	}
 then
-	if test "${value_is}" = "${default_value}"
+	if test "${value_is}" = "${default_value:-not ${value_is}}"
 	then
 		# Might produce false positives for default values.
 		# TODO: Manual checking should be done, but for simplicity, this case is
