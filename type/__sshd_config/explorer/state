@@ -29,8 +29,16 @@ trlower() { tr '[:upper:]' '[:lower:]'; }
 tolower() { printf '%s' "$*" | trlower; }
 
 default_value() {
-	sshd -T -f /dev/null -C "${sshd_conn_spec}" \
+	"${sshd:?}" -T -f /dev/null -C "${sshd_conn_spec}" \
 	| sed -n -e 's/^'"$(tolower "${1:?}")"'[[:blank:]]\{1,\}//p'
+}
+
+# NOTE: Old versions of sshd(8) don't allow to be executed from PATH even if
+#       just for checking the config file's syntax.
+#       So while checking for sshd's presence also extract its path.
+sshd=$(command -v sshd 2>/dev/null) || {
+	echo 'Cannot find sshd(8).' >&2
+	exit 0
 }
 
 sshd_conn_spec=$(
@@ -88,11 +96,6 @@ fi
 { read -r value_should <"${__object:?}/parameter/value"; } 2>/dev/null \
 || test "${state_should}" = absent || exit 0  # param optional if --state absent
 
-command -v sshd >/dev/null 2>&1 || {
-	echo 'Cannot find sshd.' >&2
-	exit 1
-}
-
 test -e "${sshd_config_file}" || {
 	echo 'absent'
 	exit 0
@@ -108,13 +111,13 @@ test -d "${__object:?}/files" || mkdir "${__object:?}/files"
 } >"${__object:?}/files/optline.tmp"
 
 value_is=$(
-	sshd -T -f "${sshd_config_file}" -C "${sshd_conn_spec}" \
+	"${sshd:?}" -T -f "${sshd_config_file}" -C "${sshd_conn_spec}" \
 	| sed -n -e 's/^'"$(tolower "${option_name}")"'[[:blank:]]\{1,\}//p')
 # convert given value to the value reported by sshd -T (this is required to
 # compare values with different names, e.g. prohibit-password or delta values
 # like "Ciphers -md5")
 value_should=$(
-	sshd -T -f "${__object:?}/files/optline.tmp" -C "${sshd_conn_spec}" \
+	"${sshd:?}" -T -f "${__object:?}/files/optline.tmp" -C "${sshd_conn_spec}" \
 	| sed -n -e 's/^'"$(tolower "${option_name}")"'[[:blank:]]\{1,\}//p')
 rm "${__object:?}/files/optline.tmp"
 
