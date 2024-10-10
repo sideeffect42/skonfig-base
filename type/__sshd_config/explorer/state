@@ -28,6 +28,9 @@ joinlines() { sed -n -e H -e "\${x;s/^\\n//;s/\\n/${1:?}/g;p;}"; }
 trlower() { tr '[:upper:]' '[:lower:]'; }
 tolower() { printf '%s' "$*" | trlower; }
 
+grep_cfg_value() {
+	awk -v k="$1" 'tolower(k)==$1 { $1=""; sub(/^[[:blank:]]*/, ""); print }'
+}
 
 # NOTE: Old versions of sshd(8) don't allow to be executed from PATH even if
 #       just for checking the config file's syntax.
@@ -104,7 +107,7 @@ sshd_conn_spec=$(
 
 default_value=$(
 	"${sshd}" -T -f /dev/null -C "${sshd_conn_spec}" \
-	| sed -n -e 's/^'"$(tolower "${1:?}")"'[[:blank:]]\{1,\}//p'
+	| grep_cfg_value "${option_name}"
 )
 
 test -d "${__object:?}/files" || mkdir "${__object:?}/files"
@@ -118,13 +121,13 @@ test -d "${__object:?}/files" || mkdir "${__object:?}/files"
 
 value_is=$(
 	"${sshd:?}" -T -f "${sshd_config_file}" -C "${sshd_conn_spec}" \
-	| sed -n -e 's/^'"$(tolower "${option_name}")"'[[:blank:]]\{1,\}//p')
+	| grep_cfg_value "${option_name}")
 # convert given value to the value reported by sshd -T (this is required to
 # compare values with different names, e.g. prohibit-password or delta values
 # like "Ciphers -md5")
 value_should=$(
 	"${sshd:?}" -T -f "${__object:?}/files/optline.tmp" -C "${sshd_conn_spec}" \
-	| sed -n -e 's/^'"$(tolower "${option_name}")"'[[:blank:]]\{1,\}//p')
+	| grep_cfg_value "${option_name}")
 rm "${__object:?}/files/optline.tmp"
 
 if printf '%s\n' "${value_is}" | {
