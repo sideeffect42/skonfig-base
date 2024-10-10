@@ -70,6 +70,10 @@ BUGS
 * ``Include`` directives are ignored.
 * Config options are not added/removed to/from the config file if their value is
   the default value.
+* ``Match``es with multiple conditions are only considered identical if the
+  conditions are listed in the same order.
+* This type does not remove empty Match blocks from the config file after the
+  last option was removed.
 
 
 SEE ALSO
