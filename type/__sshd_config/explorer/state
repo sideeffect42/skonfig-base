@@ -28,10 +28,6 @@ joinlines() { sed -n -e H -e "\${x;s/^\\n//;s/\\n/${1:?}/g;p;}"; }
 trlower() { tr '[:upper:]' '[:lower:]'; }
 tolower() { printf '%s' "$*" | trlower; }
 
-default_value() {
-	"${sshd:?}" -T -f /dev/null -C "${sshd_conn_spec}" \
-	| sed -n -e 's/^'"$(tolower "${1:?}")"'[[:blank:]]\{1,\}//p'
-}
 
 # NOTE: Old versions of sshd(8) don't allow to be executed from PATH even if
 #       just for checking the config file's syntax.
@@ -40,6 +36,29 @@ sshd=$(command -v sshd 2>/dev/null) || {
 	echo 'Cannot find sshd(8).' >&2
 	exit 0
 }
+
+sshd_config_file=$("${__type_explorer:?}/config_file")
+test -e "${sshd_config_file}" || {
+	echo 'absent'
+	exit 0
+}
+
+read -r state_should <"${__object:?}/parameter/state"
+if test -s "${__object:?}/parameter/option"
+then
+	read -r option_name <"${__object:?}/parameter/option"
+else
+	option_name=${__object_id:?}
+fi
+if { read -r value_should <"${__object:?}/parameter/value"; } 2>/dev/null
+then
+	value_should=${value_should#\\}
+elif test "${state_should}" != absent
+then
+	# parameter --value is optional for --state absent only
+	printf 'Parameter --value is required for --state %s!\n' "${state_should}" >&2
+	exit 1
+fi
 
 sshd_conn_spec=$(
 	if test -s "${__object:?}/parameter/match"
@@ -83,23 +102,10 @@ sshd_conn_spec=$(
 	| joinlines ','
 )
 
-sshd_config_file=$("${__type_explorer:?}/config_file")
-state_should=$(cat "${__object:?}/parameter/state")
-
-if test -s "${__object:?}/parameter/option"
-then
-	option_name=$(cat "${__object:?}/parameter/option")
-else
-	option_name=${__object_id:?}
-fi
-
-{ read -r value_should <"${__object:?}/parameter/value"; } 2>/dev/null \
-|| test "${state_should}" = absent || exit 0  # param optional if --state absent
-
-test -e "${sshd_config_file}" || {
-	echo 'absent'
-	exit 0
-}
+default_value=$(
+	"${sshd}" -T -f /dev/null -C "${sshd_conn_spec}" \
+	| sed -n -e 's/^'"$(tolower "${1:?}")"'[[:blank:]]\{1,\}//p'
+)
 
 test -d "${__object:?}/files" || mkdir "${__object:?}/files"
 {
@@ -140,7 +146,7 @@ if printf '%s\n' "${value_is}" | {
 		esac
 	}
 then
-	if default_value "${option_name}" | grep -q -x -F "${value_is}"
+	if test "${value_is}" = "${default_value}"
 	then
 		# Might produce false positives for default values.
 		# TODO: Manual checking should be done, but for simplicity, this case is
