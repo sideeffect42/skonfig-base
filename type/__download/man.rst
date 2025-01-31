@@ -87,7 +87,7 @@ EXAMPLES
 AUTHORS
 -------
 * Ander Punnar <ander-at-kvlt-dot-ee>
-* Dennis Camera <dennis.camera at riiengineering.ch>
+* Dennis Camera <dennis.camera--@--riiengineering.ch>
 
 
 COPYING
