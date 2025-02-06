@@ -46,7 +46,7 @@ elif [ -n "${version}" ]; then
 elif [ -f "${__object:?}/parameter/flavor" ]; then
 	pkgid="${name}--${flavor}"
 else
-	pkgid="${name}"
+	pkgid=${name}
 fi
 
 state_should=$(cat "${__object:?}/parameter/state")
