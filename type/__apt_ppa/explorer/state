@@ -30,4 +30,3 @@ repo_file_name="$(echo "${repo_name}" | sed -e 's|[/:]|-|' -e 's|\.|_|')-${DISTR
 
 [ -s "/etc/apt/sources.list.d/${repo_file_name}" ] \
    && echo present || echo absent
-
